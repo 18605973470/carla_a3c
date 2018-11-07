@@ -31,6 +31,7 @@ def train(rank, args, shared_model, counter, lock, training_num, optimizer=None)
     done = True
 
     episode_length = 0
+    episode_reward = 0
     while True:
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
@@ -57,15 +58,17 @@ def train(rank, args, shared_model, counter, lock, training_num, optimizer=None)
 
             action = prob.multinomial(num_samples=1).detach()
             log_prob = log_prob.gather(1, action)
-
-            state, reward, done, _ = env.step(action.numpy())
+            
+            state, reward, done, _ = env.step(action.numpy()[0, 0])
             done = done or episode_length >= args.max_episode_length
-            reward = max(min(reward, 1), -1)
-
+            #reward = max(min(reward, 1), -1)
+            episode_reward += reward
             with lock:
                 counter.value += 1
 
             if done:
+                print("Training {} episode reward {} episode length {}".format(counter.value, episode_reward, episode_length))
+                episode_reward = 0
                 episode_length = 0
                 state = env.reset()
 

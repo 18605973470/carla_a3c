@@ -35,9 +35,9 @@ class ActorCritic(torch.nn.Module):
         self.conv2 = nn.Conv2d(16, 16, 4, stride=2)
         self.conv3 = nn.Conv2d(16, 32, 2, stride=1)
 
-        self.lrelu1 = F.leaky_relu(0.1)
-        self.lrelu2 = F.leaky_relu(0.1)
-        self.lrelu3 = F.leaky_relu(0.1)
+        self.lrelu1 = nn.LeakyReLU(0.1)
+        self.lrelu2 = nn.LeakyReLU(0.1)
+        self.lrelu3 = nn.LeakyReLU(0.1)
 
         self.lstm = nn.LSTMCell(32 * 8 * 8, 256)
 
@@ -59,6 +59,7 @@ class ActorCritic(torch.nn.Module):
 
     def forward(self, inputs):
         inputs, (hx, cx) = inputs
+        inputs = inputs.float()
         x = self.lrelu1(self.conv1(inputs))
         x = self.lrelu2(self.conv2(x))
         x = self.lrelu3(self.conv3(x))

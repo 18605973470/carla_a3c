@@ -7,7 +7,6 @@ import torch
 import torch.multiprocessing as mp
 
 import my_optim
-from envs import create_atari_env
 from model import ActorCritic
 from test import test
 from train import train
@@ -42,7 +41,7 @@ parser.add_argument('--no-shared', default=False,
                     help='use an optimizer without shared momentum.')
 parser.add_argument('--max-training-num', type=int, default=1000000,
                     help='max training number.')
-parser.add_argument('--save_model_dir', default='experiment/',
+parser.add_argument('--save-model-dir', default='experiment/',
                     help='experiment model dir')
 parser.add_argument("--experiment-desc", default="",
                     help="description to experiments")
@@ -56,10 +55,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if os.path.exists(args.save_model_dir):
+    if not os.path.exists(args.save_model_dir):
         os.mkdir(args.save_model_dir)
 
-    with open(args.save_model_dir + "description", 'rw') as file:
+    with open(args.save_model_dir + "description", 'w') as file:
         file.write(args.experiment_desc)
 
     torch.manual_seed(args.seed)

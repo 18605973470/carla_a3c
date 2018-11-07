@@ -253,7 +253,7 @@ class CarlaEnvironmentWrapper:
     def step(self, action):
 
         # discrete
-        steers = [-0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2]
+        steers = [0, -0.25, -0.12, -0.05, 0.05, 0.12, 0.25]
         steer = steers[action]
 
         # continuous

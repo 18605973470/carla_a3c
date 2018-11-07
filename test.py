@@ -79,11 +79,11 @@ def test(rank, args, shared_model, counter, training_num):
             if max_episode_reward < reward_sum:
                 max_episode_reward = reward_sum
                 max_episode_length = episode_length
-                torch.save(state_to_save, '{0}{1}-max.dat'.format(args.save_model_dir, args.env))
+                torch.save(state_to_save, '{0}{1}-max.dat'.format(args.save_model_dir, args.env_name))
 
             if np.mean(recent_episode_reward) > max_average_reward:
                 max_average_reward = np.mean(recent_episode_reward)
-                torch.save(state_to_save, '{0}{1}-mean.dat'.format(args.save_model_dir, args.env))
+                torch.save(state_to_save, '{0}{1}-mean.dat'.format(args.save_model_dir, args.env_name))
 
             reward_sum = 0
             episode_length = 0
@@ -100,7 +100,7 @@ def test(rank, args, shared_model, counter, training_num):
                 break
 
             state = env.reset()
-            time.sleep(30)
+            time.sleep(60)
 
         state = torch.from_numpy(state)
 
