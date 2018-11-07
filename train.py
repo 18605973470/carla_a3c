@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from envs import create_atari_env
+from environments import create_env
 from model import ActorCritic
 
 
@@ -14,13 +14,12 @@ def ensure_shared_grads(model, shared_model):
         shared_param._grad = param.grad
 
 
-def train(rank, args, shared_model, counter, lock, optimizer=None):
+def train(rank, args, shared_model, counter, lock, training_num, optimizer=None):
     torch.manual_seed(args.seed + rank)
 
-    env = create_atari_env(args.env_name)
-    env.seed(args.seed + rank)
+    env = create_env(args, 12300+rank*10, False, rank)
 
-    model = ActorCritic(env.observation_space.shape[0], env.action_space)
+    model = ActorCritic(1, 7)
 
     if optimizer is None:
         optimizer = optim.Adam(shared_model.parameters(), lr=args.lr)
@@ -78,6 +77,11 @@ def train(rank, args, shared_model, counter, lock, optimizer=None):
             if done:
                 break
 
+        with lock:
+            training_num.value += 1
+            if training_num.value >= args.max_training_num:
+                break
+
         R = torch.zeros(1, 1)
         if not done:
             value, _, _ = model((state.unsqueeze(0), (hx, cx)))
@@ -107,3 +111,5 @@ def train(rank, args, shared_model, counter, lock, optimizer=None):
 
         ensure_shared_grads(model, shared_model)
         optimizer.step()
+
+    env.end()

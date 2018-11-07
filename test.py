@@ -1,20 +1,19 @@
 import time
-from collections import deque
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 
-from envs import create_atari_env
+from environments import create_env
 from model import ActorCritic
 
 
-def test(rank, args, shared_model, counter):
+def test(rank, args, shared_model, counter, training_num):
     torch.manual_seed(args.seed + rank)
 
-    env = create_atari_env(args.env_name)
-    env.seed(args.seed + rank)
+    env = create_env(args, 12500, False, 0)
 
-    model = ActorCritic(env.observation_space.shape[0], env.action_space)
+    model = ActorCritic(1, 7)
 
     model.eval()
 
@@ -26,7 +25,12 @@ def test(rank, args, shared_model, counter):
     start_time = time.time()
 
     # a quick hack to prevent the agent from stucking
-    actions = deque(maxlen=100)
+    # actions = deque(maxlen=100)
+    max_episode_reward = -np.inf
+    max_average_reward = -np.inf
+    max_episode_length = 0
+    recent_episode_reward = np.zeros(shape=[5])
+
     episode_length = 0
     while True:
         episode_length += 1
@@ -49,20 +53,38 @@ def test(rank, args, shared_model, counter):
         reward_sum += reward
 
         # a quick hack to prevent the agent from stucking
-        actions.append(action[0, 0])
-        if actions.count(actions[0]) == actions.maxlen:
-            done = True
+        # actions.append(action[0, 0])
+        # if actions.count(actions[0]) == actions.maxlen:
+        #     done = True
 
         if done:
-            print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}".format(
-                time.strftime("%Hh %Mm %Ss",
-                              time.gmtime(time.time() - start_time)),
-                counter.value, counter.value / (time.time() - start_time),
-                reward_sum, episode_length))
+            recent_episode_reward = np.roll(recent_episode_reward, 1)
+            recent_episode_reward[0] = reward_sum
+            state_to_save = model.state_dict()
+            if max_episode_reward < reward_sum:
+                max_episode_reward = reward_sum
+                max_episode_length = episode_length
+                torch.save(state_to_save, '{0}{1}-max.dat'.format(args.save_model_dir, args.env))
+
+            if np.mean(recent_episode_reward) > max_average_reward:
+                max_average_reward = np.mean(recent_episode_reward)
+                torch.save(state_to_save, '{0}{1}-mean.dat'.format(args.save_model_dir, args.env))
+
             reward_sum = 0
             episode_length = 0
-            actions.clear()
+            # actions.clear()
+
+            print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}, max episode reward {}, max episode length {} max average reward {}".format(
+                time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time)),
+                counter.value, counter.value / (time.time() - start_time),
+                reward_sum, episode_length, max_episode_reward, max_episode_length, max_average_reward))
+
+            if training_num.value >= args.max_training_num:
+                break
+
             state = env.reset()
-            time.sleep(60)
+            time.sleep(30)
 
         state = torch.from_numpy(state)
+
+    env.end()

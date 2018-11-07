@@ -26,32 +26,44 @@ parser.add_argument('--entropy-coef', type=float, default=0.01,
                     help='entropy term coefficient (default: 0.01)')
 parser.add_argument('--value-loss-coef', type=float, default=0.5,
                     help='value loss coefficient (default: 0.5)')
-parser.add_argument('--max-grad-norm', type=float, default=50,
-                    help='value loss coefficient (default: 50)')
+parser.add_argument('--max-grad-norm', type=float, default=40,
+                    help='value loss coefficient (default: 40)')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed (default: 1)')
-parser.add_argument('--num-processes', type=int, default=4,
+parser.add_argument('--num-processes', type=int, default=3,
                     help='how many training processes to use (default: 4)')
 parser.add_argument('--num-steps', type=int, default=20,
                     help='number of forward steps in A3C (default: 20)')
-parser.add_argument('--max-episode-length', type=int, default=1000000,
+parser.add_argument('--max-episode-length', type=int, default=10000,
                     help='maximum length of an episode (default: 1000000)')
-parser.add_argument('--env-name', default='PongDeterministic-v4',
-                    help='environment to train on (default: PongDeterministic-v4)')
+parser.add_argument('--env-name', default='Carla',
+                    help='environment to train on (default: Carla)')
 parser.add_argument('--no-shared', default=False,
                     help='use an optimizer without shared momentum.')
-
+parser.add_argument('--max-training-num', type=int, default=1000000,
+                    help='max training number.')
+parser.add_argument('--save_model_dir', default='experiment/',
+                    help='experiment model dir')
+parser.add_argument("--experiment-desc", default="",
+                    help="description to experiments")
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
+    # necessary
+    mp.set_start_method('spawn')
+
     args = parser.parse_args()
 
+    if os.path.exists(args.save_model_dir):
+        os.mkdir(args.save_model_dir)
+
+    with open(args.save_model_dir + "description", 'rw') as file:
+        file.write(args.experiment_desc)
+
     torch.manual_seed(args.seed)
-    env = create_atari_env(args.env_name)
-    shared_model = ActorCritic(
-        env.observation_space.shape[0], env.action_space)
+    shared_model = ActorCritic(1, 7)
     shared_model.share_memory()
 
     if args.no_shared:
@@ -63,15 +75,18 @@ if __name__ == '__main__':
     processes = []
 
     counter = mp.Value('i', 0)
+    training_num = mp.Value('i', 0)
     lock = mp.Lock()
 
-    p = mp.Process(target=test, args=(args.num_processes, args, shared_model, counter))
+    p = mp.Process(target=test, args=(args.num_processes, args, shared_model, counter, training_num))
     p.start()
     processes.append(p)
 
     for rank in range(0, args.num_processes):
-        p = mp.Process(target=train, args=(rank, args, shared_model, counter, lock, optimizer))
+        p = mp.Process(target=train, args=(rank, args, shared_model, counter, lock, training_num, optimizer))
         p.start()
         processes.append(p)
     for p in processes:
         p.join()
+
+    print("training exits")
