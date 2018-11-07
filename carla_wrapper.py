@@ -388,7 +388,7 @@ if __name__ == "__main__":
         # print(img[0].shape)
         # print(img[1])
         img, _, done, info = env.step(3)
-        print(_)
+        # print(_)
         if done == True:
             break
     env.end()
