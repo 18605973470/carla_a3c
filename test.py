@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from visdom import Visdom
+import subprocess
 from environments import create_env
 from model import ActorCritic
 
@@ -23,6 +25,19 @@ def test(rank, args, shared_model, counter, training_num):
     done = True
 
     start_time = time.time()
+
+    with open("/dev/null", "w") as out:
+        cmd = ["python3", "-m", "visdom.server"]
+        vis_server = subprocess.Popen(cmd, stdout=out, stderr=out)
+        time.sleep(5)
+
+        reward_vis = Visdom(env="reward")
+        mean_reward_vis = Visdom(env="mean_reward")
+        reward_win = reward_vis.line(X=torch.Tensor([0]), Y=torch.Tensor([0]))
+        mean_reward_win = mean_reward_vis.line(X=torch.Tensor([0]), Y=torch.Tensor([0]))
+
+        assert reward_vis.check_connection()
+        assert mean_reward_vis.check_connection() 
 
     # a quick hack to prevent the agent from stucking
     # actions = deque(maxlen=100)
@@ -73,6 +88,8 @@ def test(rank, args, shared_model, counter, training_num):
             reward_sum = 0
             episode_length = 0
             # actions.clear()
+            reward_win = reward_vis.line(Y=torch.Tensor([reward_sum]), X=torch.Tensor([training_num.value * args.num_steps]), win=reward_win, update="append")
+            mean_reward_win = mean_reward_vis.line(Y=torch.Tensor([np.mean(recent_episode_reward)]), X=torch.Tensor([training_num.value * args.num_steps]), win=mean_reward_win, update="append")
 
             print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}, max episode reward {}, max episode length {} max average reward {}".format(
                 time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time)),
