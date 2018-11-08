@@ -67,7 +67,7 @@ def train(rank, args, shared_model, counter, lock, training_num, optimizer=None)
                 counter.value += 1
 
             if done:
-                print("Training {} episode reward {} episode length {}".format(counter.value, episode_reward, episode_length))
+                print("Training {} steps reward {} episode length {}".format(counter.value, episode_reward, episode_length))
                 episode_reward = 0
                 episode_length = 0
                 state = env.reset()
@@ -99,9 +99,10 @@ def train(rank, args, shared_model, counter, lock, training_num, optimizer=None)
             advantage = R - values[i]
             value_loss = value_loss + 0.5 * advantage.pow(2)
 
+            # print("value", values[i + 1] - values[i])
             # Generalized Advantage Estimataion
             delta_t = rewards[i] + args.gamma * \
-                values[i + 1] - values[i]
+                values[i + 1].detach() - values[i].detach()
             gae = gae * args.gamma * args.tau + delta_t
 
             policy_loss = policy_loss - \

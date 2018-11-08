@@ -26,18 +26,18 @@ def test(rank, args, shared_model, counter, training_num):
 
     start_time = time.time()
 
-    with open("/dev/null", "w") as out:
-        cmd = ["python3", "-m", "visdom.server"]
-        vis_server = subprocess.Popen(cmd, stdout=out, stderr=out)
-        time.sleep(5)
-   
-        reward_vis = Visdom(endpoint="reward")
-        mean_reward_vis = Visdom(endpoint="mean_reward")
-        reward_win = reward_vis.line(X=torch.Tensor([0]), Y=torch.Tensor([0]))
-        mean_reward_win = mean_reward_vis.line(X=torch.Tensor([0]), Y=torch.Tensor([0]))
+    # with open("/dev/null", "w") as out:
+    #     cmd = ["python3", "-m", "visdom.server"]
+    #     vis_server = subprocess.Popen(cmd, stdout=out, stderr=out)
+    #     time.sleep(5)
     #
-        assert reward_vis.check_connection()
-        assert mean_reward_vis.check_connection()
+    #     reward_vis = Visdom(endpoint="reward")
+    #     mean_reward_vis = Visdom(endpoint="mean_reward")
+    #     reward_win = reward_vis.line(X=torch.Tensor([0]), Y=torch.Tensor([0]))
+    #     mean_reward_win = mean_reward_vis.line(X=torch.Tensor([0]), Y=torch.Tensor([0]))
+
+        # assert reward_vis.check_connection()
+        # assert mean_reward_vis.check_connection()
 
     # a quick hack to prevent the agent from stucking
     # actions = deque(maxlen=100)
@@ -91,8 +91,8 @@ def test(rank, args, shared_model, counter, training_num):
             reward_sum = 0
             episode_length = 0
             # actions.clear()
-            reward_win = reward_vis.line(Y=torch.Tensor([reward_sum]), X=torch.Tensor([counter.value]), win=reward_win, update="append")
-            mean_reward_win = mean_reward_vis.line(Y=torch.Tensor([np.mean(recent_episode_reward)]), X=torch.Tensor([counter.value]), win=mean_reward_win, update="append")
+            # reward_win = reward_vis.line(Y=torch.Tensor([reward_sum]), X=torch.Tensor([counter.value]), win=reward_win, update="append")
+            # mean_reward_win = mean_reward_vis.line(Y=torch.Tensor([np.mean(recent_episode_reward)]), X=torch.Tensor([counter.value]), win=mean_reward_win, update="append")
 
             print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}, max episode reward {}, max episode length {} max average reward {}".format(
                 time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time)),

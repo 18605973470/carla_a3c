@@ -4,7 +4,7 @@ import os
 import sys
 from os import path, environ
 
-os.environ["CARLA_ROOT"] = "/home/arch760/FanYang/Driving/" #"/home/arch760/FanYang/Driving/"
+os.environ["CARLA_ROOT"] = "/home/arch760/FanYang/Driving/" # "/home/r720/Driving/Carla" #"/home/arch760/FanYang/Driving/"
 # os.environ["SDL_HINT_CUDA_DEVICE"] = "0"
 # os.environ["SDL_VIDEODRIVER"] = "offscreen"
 
@@ -300,7 +300,7 @@ class CarlaEnvironmentWrapper:
                 cmd = "SDL_HINT_CUDA_DEVICE=0 SDL_VIDEODRIVER=offscreen "
             cmd += path.join(environ.get('CARLA_ROOT'), 'CarlaUE4.sh ') + self.map + \
                                   " -benchmark" + " -carla-server" + " -fps=10" + " -world-port={}".format(self.port) + \
-                                  " -windowed -ResX={} -ResY={}".format(480, 320) + \
+                                  " -windowed -ResX={} -ResY={}".format(10, 10) + \
                                   " -carla-no-hud"
             print(cmd)
             self.server = subprocess.Popen([cmd], shell=True, preexec_fn=os.setsid, stdout=out, stderr=out)
@@ -370,8 +370,8 @@ class CarlaEnvironmentWrapper:
             reward = -1
         else:
             if self.control_output == 1:
-                # reward = 0.5 * (1 - np.abs(self.control.steer) * 1.5)
-                reward = 0.4
+                reward = 0.5 * (1 - np.abs(self.control.steer) * 1.5)
+                # reward = 0.4
             else:
                 reward = (speed/100) * (1 - np.abs(self.control.steer) * 1)
 
