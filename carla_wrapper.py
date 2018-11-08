@@ -4,7 +4,7 @@ import os
 import sys
 from os import path, environ
 
-os.environ["CARLA_ROOT"] ="/home/arch760/FanYang/Driving/"
+os.environ["CARLA_ROOT"] = "/home/r720/Driving/Carla" #"/home/arch760/FanYang/Driving/"
 # os.environ["SDL_HINT_CUDA_DEVICE"] = "0"
 # os.environ["SDL_VIDEODRIVER"] = "offscreen"
 
@@ -107,6 +107,15 @@ def depth_process(img):
             result[i][j] = (img[i][j][0] + img[i][j][1] * 256 + img[i][j][2] * 256 * 256) / (256 * 256 * 256 - 1)
     return result
 
+def get_open_port():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("", 0))
+    s.listen(1)
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
 # 0.4 ~ 3m/s * 3.6km/h speed
 class CarlaEnvironmentWrapper:
     def __init__(self, stack_frames=1, img_width=84, img_height=84, control_onput=1, rank=0, port=2000, throttle=0.35, randomization=False, preprocess="origin", render=False):
@@ -149,7 +158,7 @@ class CarlaEnvironmentWrapper:
         self.game = CarlaClient(self.host, self.port, timeout=99999999)
         self.set_settings()
         self.game.connect()
-        print("connected")
+        # print("connected")
 
         scene = self.game.load_settings(self.settings)
         positions = scene.player_start_spots
@@ -187,7 +196,7 @@ class CarlaEnvironmentWrapper:
         y = 0.0
         z = 1.4
         fov = 90.0
-        print("x={0}, y={1}, z={2}, fov={3}".format(x, y, z, fov))
+        # print("x={0}, y={1}, z={2}, fov={3}".format(x, y, z, fov))
 
         camera.set(FOV=fov)
         camera.set_position(x=x, y=y, z=z)
@@ -201,15 +210,15 @@ class CarlaEnvironmentWrapper:
         #     self.init_settings()
 
         # start_position = np.random.choice(range(self.num_pos))
+        s = [74, 75, 113, 114]
 
         if random_start is not None:
             start_position = random_start
         else:
             if self.randomization == True:
-                s = [74, 75, 113, 114]
-                start_position = s[self.rank]
+                start_position = np.random.choice(s)
             else:
-                start_position = 75
+                start_position = np.random.choice(s)
 
         trials = 0
         self.step_per_episode = 0
@@ -247,7 +256,7 @@ class CarlaEnvironmentWrapper:
 
         for i in range(14):
             self.game.send_control(self.control)
-            measurements, sensor_data = self.game.read_data()
+            # measurements, sensor_data = self.game.read_data()
         return self._update_state(self.control)[0]
 
     def step(self, action):
@@ -284,6 +293,7 @@ class CarlaEnvironmentWrapper:
 
     def _open_server(self):
         # log_path = path.join(logger.experiments_path, "CARLA_LOG_{}.txt".format(self.port))
+        self.port = get_open_port()
         with open("/dev/null", "wb") as out:
             cmd = ""
             if self.render == False:
@@ -387,7 +397,7 @@ if __name__ == "__main__":
         # print(img[0])
         # print(img[0].shape)
         # print(img[1])
-        img, _, done, info = env.step(3)
+        img, _, done, info = env.step(0)
         # print(_)
         if done == True:
             break

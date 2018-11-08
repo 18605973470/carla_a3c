@@ -80,10 +80,10 @@ def train(rank, args, shared_model, counter, lock, training_num, optimizer=None)
             if done:
                 break
 
-        with lock:
-            training_num.value += 1
-            if training_num.value >= args.max_training_num:
-                break
+        # with lock:
+        # training_num.value += 1
+        if counter.value >= args.max_training_num:
+            break
 
         R = torch.zeros(1, 1)
         if not done:
