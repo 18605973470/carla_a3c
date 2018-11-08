@@ -4,7 +4,7 @@ import os
 import sys
 from os import path, environ
 
-os.environ["CARLA_ROOT"] = "/home/r720/Driving/Carla" #"/home/arch760/FanYang/Driving/"
+os.environ["CARLA_ROOT"] = "/home/arch760/FanYang/Driving/" #"/home/arch760/FanYang/Driving/"
 # os.environ["SDL_HINT_CUDA_DEVICE"] = "0"
 # os.environ["SDL_VIDEODRIVER"] = "offscreen"
 
