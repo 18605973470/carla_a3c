@@ -349,7 +349,7 @@ class CarlaEnvironmentWrapper:
             if self.render == True:
                 cv2.imshow("img", img)
                 cv2.waitKey(1)
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) / 255 # / 127.5 - 1
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) / 127.5 - 1
         elif self.imagetype == "depth":
             img = depth_process(img)
             if self.render == True:
@@ -371,7 +371,6 @@ class CarlaEnvironmentWrapper:
         else:
             if self.control_output == 1:
                 reward = 0.5 * (1 - np.abs(self.control.steer) * 1.5)
-                # reward = 0.4
             else:
                 reward = (speed/100) * (1 - np.abs(self.control.steer) * 1)
 

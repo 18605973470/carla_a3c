@@ -45,6 +45,8 @@ parser.add_argument('--save-model-dir', default='experiment/',
                     help='experiment model dir')
 parser.add_argument("--experiment-desc", default="",
                     help="description to experiments")
+parser.add_argument("--load-model", default="",
+                    help="models to load to continue")
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
@@ -63,6 +65,9 @@ if __name__ == '__main__':
 
     torch.manual_seed(args.seed)
     shared_model = ActorCritic(1, 7)
+    if args.load_model != "":
+        shared_model.load_state_dict(args.save_model_dir + args.load_model)
+
     shared_model.share_memory()
 
     if args.no_shared:
