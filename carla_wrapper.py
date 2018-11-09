@@ -4,7 +4,7 @@ import os
 import sys
 from os import path, environ
 
-os.environ["CARLA_ROOT"] = "/home/arch760/FanYang/Driving/" # "/home/r720/Driving/Carla" #"/home/arch760/FanYang/Driving/"
+os.environ["CARLA_ROOT"] = "/home/r720/Driving/Carla/" # "/home/r720/Driving/Carla" #"/home/arch760/FanYang/Driving/"
 # os.environ["SDL_HINT_CUDA_DEVICE"] = "0"
 # os.environ["SDL_VIDEODRIVER"] = "offscreen"
 
@@ -161,8 +161,9 @@ class CarlaEnvironmentWrapper:
         # print("connected")
 
         scene = self.game.load_settings(self.settings)
-        positions = scene.player_start_spots
-        self.num_pos = len(positions)
+        # positions = scene.player_start_spots
+        # positions = 147
+        self.num_pos = 147
 
         self.step_per_episode = 0
 
@@ -209,6 +210,7 @@ class CarlaEnvironmentWrapper:
         #     self.game.disconnect()
         #     self.init_settings()
 
+        # self.set_settings()
         # start_position = np.random.choice(range(self.num_pos))
         s = [74, 75, 113, 114]
 
@@ -216,9 +218,15 @@ class CarlaEnvironmentWrapper:
             start_position = random_start
         else:
             if self.randomization == True:
-                start_position = np.random.choice(s)
+                if self.rank <= 1:
+                    start_position = np.random.choice(s[self.rank])
+                else:
+                    start_position = np.random.choice(range(147))
             else:
-                start_position = np.random.choice(s)
+                if self.rank <= 1:
+                    start_position = np.random.choice(s[self.rank])
+                else:
+                    start_position = np.random.choice(range(147))
 
         trials = 0
         self.step_per_episode = 0
@@ -234,7 +242,9 @@ class CarlaEnvironmentWrapper:
                 self._open_server()
                 self.game.connect()
                 self.set_settings()
+                scene = self.game.load_settings(self.settings)
                 self.game.start_episode(start_position)
+
                 print("start with %d" % start_position)
                 trials += 1
                 print("Connect Failed, try %d times" % trials)
@@ -349,7 +359,8 @@ class CarlaEnvironmentWrapper:
             if self.render == True:
                 cv2.imshow("img", img)
                 cv2.waitKey(1)
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) / 127.5 - 1
+            img = img / 125 - 1
+            # img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) / 127.5 - 1
         elif self.imagetype == "depth":
             img = depth_process(img)
             if self.render == True:
@@ -376,11 +387,12 @@ class CarlaEnvironmentWrapper:
 
         self.last_steer = action.steer
 
-        if self.state is None:
-            self.state = np.stack((img, ) * self.stack_frames, axis=0)
-        else:
-            img = img.reshape((1, self.height, self.width))
-            self.state = np.append(self.state[1:, :, :], img, axis=0)
+        self.state = img.reshape(3, self.height, self.width)
+        # if self.state is None:
+        #     self.state = np.stack((img, ) * self.stack_frames, axis=0)
+        # else:
+        #     img = img.reshape((1, self.height, self.width))
+        #     self.state = np.append(self.state[1:, :, :], img, axis=0)
 
         return self.state, reward, done, None
  

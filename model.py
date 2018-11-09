@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torchvision.models as models
 import torch.nn.functional as F
 
 
@@ -28,16 +29,20 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 
+
 class ActorCritic(torch.nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super(ActorCritic, self).__init__()
-        self.conv1 = nn.Conv2d(num_inputs, 16, 8, stride=4)
-        self.conv2 = nn.Conv2d(16, 16, 4, stride=2)
-        self.conv3 = nn.Conv2d(16, 32, 2, stride=1)
-
-        self.lrelu1 = nn.LeakyReLU(0.1)
-        self.lrelu2 = nn.LeakyReLU(0.1)
-        self.lrelu3 = nn.LeakyReLU(0.1)
+        # self.cnn = models.resnet18(pretrained=True)
+        self.cnn = models.vgg16_bn(pretrained=True).features
+        # print(self.cnn)
+        # self.conv1 = nn.Conv2d(num_inputs, 16, 8, stride=4)
+        # self.conv2 = nn.Conv2d(16, 16, 4, stride=2)
+        # self.conv3 = nn.Conv2d(16, 32, 2, stride=1)
+        #
+        # self.lrelu1 = nn.LeakyReLU(0.1)
+        # self.lrelu2 = nn.LeakyReLU(0.1)
+        # self.lrelu3 = nn.LeakyReLU(0.1)
 
         self.lstm = nn.LSTMCell(32 * 8 * 8, 256)
 
@@ -60,9 +65,11 @@ class ActorCritic(torch.nn.Module):
     def forward(self, inputs):
         inputs, (hx, cx) = inputs
         inputs = inputs.float()
-        x = self.lrelu1(self.conv1(inputs))
-        x = self.lrelu2(self.conv2(x))
-        x = self.lrelu3(self.conv3(x))
+        x = self.cnn(inputs)
+        # print(x)
+        # x = self.lrelu1(self.conv1(inputs))
+        # x = self.lrelu2(self.conv2(x))
+        # x = self.lrelu3(self.conv3(x))
 
         x = x.view(x.size(0), -1)
         hx, cx = self.lstm(x, (hx, cx))
