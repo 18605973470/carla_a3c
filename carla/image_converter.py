@@ -39,7 +39,7 @@ def to_rgb_array(image):
     array = to_bgra_array(image)
     # Convert BGRA to RGB.
     array = array[:, :, :3]
-    array = array[:, :, ::-1]
+    # array = array[:, :, ::-1]
     return array
 
 

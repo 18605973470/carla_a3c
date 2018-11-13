@@ -195,7 +195,7 @@ class CarlaEnvironmentWrapper:
         camera.set_image_size(self.width, self.height)
         x = 2.0
         y = 0.0
-        z = 1.4
+        z = 1.5
         fov = 90.0
         # print("x={0}, y={1}, z={2}, fov={3}".format(x, y, z, fov))
 
@@ -329,6 +329,7 @@ class CarlaEnvironmentWrapper:
                          measurements.player_measurements.transform.location.z)
 
         speed = measurements.player_measurements.forward_speed
+        print(speed)
         is_stuck = (self.no_progress_start < self.step_per_episode) and (speed < 0.1)
         done = measurements.player_measurements.collision_vehicles != 0 \
                        or measurements.player_measurements.collision_pedestrians != 0 \
@@ -356,10 +357,12 @@ class CarlaEnvironmentWrapper:
         #print(img)
 
         if self.imagetype == "origin":
+            img1 = img[-160:, :, :]
+            img1 = cv2.resize(img1, (200, 66))
             if self.render == True:
-                cv2.imshow("img", img)
+                cv2.imshow("img", img1)
                 cv2.waitKey(1)
-            img = img / 125 - 1
+            img = img / 127.5 - 1
             # img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) / 127.5 - 1
         elif self.imagetype == "depth":
             img = depth_process(img)
@@ -370,7 +373,7 @@ class CarlaEnvironmentWrapper:
             # img = map_process(img)
             # print(np.any(img==6))
             # if self.render == True:
-            img = to_color(img) / 127 - 1
+            img = to_color(img) / 127.5 - 1
             # cv2.imshow("tmp", tmp)
             # cv2.waitKey(1)
             # img /= 10
@@ -388,6 +391,7 @@ class CarlaEnvironmentWrapper:
         self.last_steer = action.steer
 
         self.state = img.reshape(3, self.height, self.width)
+
         # if self.state is None:
         #     self.state = np.stack((img, ) * self.stack_frames, axis=0)
         # else:
@@ -397,7 +401,7 @@ class CarlaEnvironmentWrapper:
         return self.state, reward, done, None
  
 if __name__ == "__main__":
-    env = CarlaEnvironmentWrapper(1, 480, 320, port=45000, throttle=0.35, control_onput=1, randomization=True, preprocess="origin", render=True)
+    env = CarlaEnvironmentWrapper(1, 320, 240, port=45000, throttle=0.30, control_onput=1, randomization=True, preprocess="origin", render=True, rank=0)
     img = env.reset()
     while True:
         # print(img.shape)

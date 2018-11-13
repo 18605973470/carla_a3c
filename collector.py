@@ -30,6 +30,11 @@ import logging
 import subprocess
 import signal
 
+
+collect_right = 0
+collect_left = 0
+collect_straight = 0
+
 # 0: [0, 0, 0],  # None *
 # 1: [70, 70, 70],  # Buildings
 # 2: [190, 153, 153],  # Fences
@@ -123,6 +128,7 @@ def get_open_port():
     s.close()
     return port
 
+collect_data_size = 500
 
 # 0.4 ~ 3m/s * 3.6km/h speed
 class CarlaEnvironmentWrapper:
@@ -179,8 +185,8 @@ class CarlaEnvironmentWrapper:
     def set_settings(self):
         self.settings = CarlaSettings()
         vehicle = 0
-        pedestrain = 0
-        weather = 1
+        pedestrain = 10
+        weather = np.random.choice([1, 2, 3, 4])
         # if self.randomization:
         #     weather = np.random.choice([1, 2, 5, 7])
         # vehicle = np.random.choice(range(10*self.rank, 10*self.rank+10))
@@ -193,37 +199,66 @@ class CarlaEnvironmentWrapper:
             WeatherId=weather,
             QualityLevel="Low")
 
-        # add cameras
-        # if self.imagetype == "origin":
+        # STRAIGHT
         camera = Camera('Camera')
-        # elif self.imagetype == "depth":
-        cameraDepth = Camera('CameraDepth', PostProcessing='Depth')
-        # else:
-        cameraSeg = Camera('CameraSeg', PostProcessing='SemanticSegmentation')
-
         camera.set_image_size(self.width, self.height)
         x = 2.0
         y = 0.0
         z = 1.4
         fov = 90.0
-        # print("x={0}, y={1}, z={2}, fov={3}".format(x, y, z, fov))
-
         camera.set(FOV=fov)
         camera.set_position(x=x, y=y, z=z)
         camera.set_rotation(0.0, 0.0, 0.0)
 
-        cameraSeg.set_image_size(self.width, self.height)
+        # LEFT1
+        cameraLeft1 = Camera('CameraLeft1')
+        cameraLeft1.set_image_size(self.width, self.height)
         x = 2.0
         y = 0.0
         z = 1.4
         fov = 90.0
-        # print("x={0}, y={1}, z={2}, fov={3}".format(x, y, z, fov))
+        cameraLeft1.set(FOV=fov)
+        cameraLeft1.set_position(x=x, y=y, z=z)
+        cameraLeft1.set_rotation(0.0, -30, 0.0)
 
-        cameraSeg.set(FOV=fov)
-        cameraSeg.set_position(x=x, y=y, z=z)
-        cameraSeg.set_rotation(0.0, 0.0, 0.0)
+        # LEFT2
+        cameraLeft2 = Camera('CameraLeft2')
+        cameraLeft2.set_image_size(self.width, self.height)
+        x = 2.0
+        y = 0.0
+        z = 1.4
+        fov = 90.0
+        cameraLeft2.set(FOV=fov)
+        cameraLeft2.set_position(x=x, y=y, z=z)
+        cameraLeft2.set_rotation(0.0, -45, 0.0)
 
-        self.settings.add_sensor(cameraSeg)
+        # RIGHT1
+        cameraRight1 = Camera('CameraRight1')
+        cameraRight1.set_image_size(self.width, self.height)
+        x = 2.0
+        y = 0.0
+        z = 1.4
+        fov = 90.0
+        cameraRight1.set(FOV=fov)
+        cameraRight1.set_position(x=x, y=y, z=z)
+        cameraRight1.set_rotation(0.0, 30, 0.0)
+
+        # RIGHT2
+        cameraRight2 = Camera('CameraRight2')
+        cameraRight2.set_image_size(self.width, self.height)
+        x = 2.0
+        y = 0.0
+        z = 1.4
+        fov = 90.0
+        cameraRight2.set(FOV=fov)
+        cameraRight2.set_position(x=x, y=y, z=z)
+        cameraRight2.set_rotation(0.0, 45, 0.0)
+
+        self.settings.add_sensor(camera)
+        self.settings.add_sensor(cameraLeft1)
+        self.settings.add_sensor(cameraLeft2)
+        self.settings.add_sensor(cameraRight1)
+        self.settings.add_sensor(cameraRight2)
 
     def reset(self, random_start=None):
 
@@ -285,7 +320,7 @@ class CarlaEnvironmentWrapper:
         self.control.hand_brake = False
         self.control.reverse = False
 
-        for i in range(14):
+        for i in range(20):
             self.game.send_control(self.control)
             # measurements, sensor_data = self.game.read_data()
         self.measurements, sensor_data = self.game.read_data()
@@ -295,6 +330,7 @@ class CarlaEnvironmentWrapper:
     def step(self, action):
 
         control = self.measurements.player_measurements.autopilot_control
+        print(control.steer + 0.08, control.steer, control.steer - 0.08)
         self.control.steer = control.steer
         self.game.send_control(self.control)
         # # discrete
@@ -367,11 +403,16 @@ class CarlaEnvironmentWrapper:
 
         # if self.imagetype == "origin":
         img = image_converter.to_rgb_array(sensor_data.get('Camera', None))
+        imgLeft1  = image_converter.to_rgb_array(sensor_data.get('CameraLeft1', None))
+        imgLeft2  = image_converter.to_rgb_array(sensor_data.get('CameraLeft2', None))
+        imgRight1 = image_converter.to_rgb_array(sensor_data.get('CameraRight1', None))
+        imgRight2 = image_converter.to_rgb_array(sensor_data.get('CameraRight2', None))
+
         # elif self.imagetype == "depth":
-        imgDepth = image_converter.depth_to_logarithmic_grayscale(sensor_data.get('CameraDepth', None))
+        # imgDepth = image_converter.depth_to_logarithmic_grayscale(sensor_data.get('CameraDepth', None))
         # else:
             # img = image_converter.labels_to_cityscapes_palette(sensor_data.get('Camera', None))
-        imgSeg = image_converter.labels_to_array(sensor_data.get('CameraSeg', None))
+        # imgSeg = image_converter.labels_to_array(sensor_data.get('CameraSeg', None))
 
         # import matplotlib.pyplot as plt
         # import pillow
@@ -379,16 +420,65 @@ class CarlaEnvironmentWrapper:
         # plt.show()
         # plt.savefig("12.jpg")
         # cv2.imwrite("%d.jpg" % 11, img)
-        # cv2.imshow("img", img)
-        # cv2.waitKey(1)
-        # print(img)
 
-        if self.index < 100000:
-            imgSeg = map_process(imgSeg)
-            cv2.imwrite("data/%d-depth-%f.png" % (self.index, self.control.steer), imgDepth)
-            cv2.imwrite("data/%d-%f.png" % (self.index, self.control.steer), img)
-            cv2.imwrite("data/%d-seg-%f.png" % (self.index, self.control.steer), imgSeg)
-            self.index = self.index + 1
+        cv2.imshow("img", img)
+        cv2.imshow("imgLeft1", imgLeft1)
+        cv2.imshow("imgLeft2", imgLeft2)
+        cv2.imshow("imgRight1", imgRight1)
+        cv2.imshow("imgRight2", imgRight2)
+
+        cv2.waitKey(1)
+
+        # if self.index < 10000:
+            # cv2.imshow("img", img)
+            # cv2.waitKey(1)
+            # imgSeg = map_process(imgSeg)
+
+        global collect_left
+        global collect_right
+        global collect_straight
+        dir = "/home/r720/Data/imagedata/val"
+
+        if self.control.steer > 0.05:
+            if collect_right < collect_data_size:
+                cv2.imwrite(dir + "/right-%d-%f.png" % (collect_right, self.control.steer), img)
+                collect_right = collect_right + 1
+                cv2.imwrite(dir + "/right-%d-%f.png" % (collect_right, self.control.steer-0.08), imgRight1)
+                collect_right = collect_right + 1
+                cv2.imwrite(dir + "/right-%d-%f.png" % (collect_right, self.control.steer-0.14), imgRight2)
+                collect_right = collect_right + 1
+                cv2.imwrite(dir + "/right-%d-%f.png" % (collect_right, self.control.steer+0.08), imgLeft1)
+                collect_right = collect_right + 1
+                cv2.imwrite(dir + "/right-%d-%f.png" % (collect_right, self.control.steer+0.14), imgLeft2)
+                collect_right = collect_right + 1
+        elif self.control.steer < -0.05:
+            if collect_left < collect_data_size:
+                cv2.imwrite(dir + "/left-%d-%f.png" % (collect_left, self.control.steer), img)
+                collect_left = collect_left + 1
+                cv2.imwrite(dir + "/left-%d-%f.png" % (collect_left, self.control.steer-0.08), imgRight1)
+                collect_left = collect_left + 1
+                cv2.imwrite(dir + "/left-%d-%f.png" % (collect_left, self.control.steer-0.14), imgRight2)
+                collect_left = collect_left + 1
+                cv2.imwrite(dir + "/left-%d-%f.png" % (collect_left, self.control.steer+0.08), imgLeft1)
+                collect_left = collect_left + 1
+                cv2.imwrite(dir + "/left-%d-%f.png" % (collect_left, self.control.steer+0.14), imgLeft2)
+                collect_left = collect_left + 1
+        else:
+            if self.index % 7 == 0:
+                if collect_straight < collect_data_size:
+                    # cv2.imwrite("data/%d-depth-%f.png" % (self.index, self.control.steer), imgDepth)
+                    cv2.imwrite(dir + "/straight-%d-%f.png" % (collect_straight, self.control.steer), img)
+                    collect_straight = collect_straight + 1
+                    cv2.imwrite(dir + "/straight-%d-%f.png" % (collect_straight, self.control.steer-0.08), imgRight1)
+                    collect_straight = collect_straight + 1
+                    cv2.imwrite(dir + "/straight-%d-%f.png" % (collect_straight, self.control.steer-0.14), imgRight2)
+                    collect_straight = collect_straight + 1
+                    cv2.imwrite(dir + "/straight-%d-%f.png" % (collect_straight, self.control.steer+0.08), imgLeft1)
+                    collect_straight = collect_straight + 1
+                    cv2.imwrite(dir + "/straight-%d-%f.png" % (collect_straight, self.control.steer+0.14), imgLeft2)
+                    collect_straight = collect_straight + 1
+
+        self.index = self.index + 1
 
         # if self.imagetype == "origin":
         #     if self.render == True:
@@ -432,20 +522,26 @@ class CarlaEnvironmentWrapper:
 
 
 if __name__ == "__main__":
-    env = CarlaEnvironmentWrapper(1, 84, 84, port=45000, throttle=0.35, control_onput=1, randomization=True,
-                                  preprocess="origin", render=True)
-    img = env.reset()
-    for i in range(100002):
-        # print(img.shape)
-        # cv2.imshow("img", (img[0, :, :]+1)/2)
-        # img = (img[0, :, :] + 1) * 127.5
-        # cv2.imshow("img", img)
-        # cv2.waitKey(1)
-        # print(img[0])
-        # print(img[0].shape)
-        # print(img[1])
-        img, _, done, info = env.step(0)
-        # print(_)
-        if done == True:
-            break
-    env.end()
+    j = 0
+    starts = [75, 74, 113, 114] # 80, 10, 20, 30, 50, 88, 147, 49, 132]
+    while collect_left < collect_data_size or collect_right < collect_data_size or collect_straight < collect_data_size:
+        env = CarlaEnvironmentWrapper(1, 480, 320, port=45000, throttle=0.35, control_onput=1, randomization=True,
+                                      preprocess="origin", render=True, rank=3)
+        img = env.reset(starts[j % (len(starts) - 1)])
+        j = j + 1
+        for i in range(collect_data_size):
+            # print(img.shape)
+            # cv2.imshow("img", (img[0, :, :]+1)/2)
+            # img = (img[0, :, :] + 1) * 127.5
+            # cv2.imshow("img", img)
+            # cv2.waitKey(1)
+            # print(img[0])
+            # print(img[0].shape)
+            # print(img[1])
+            img, _, done, info = env.step(0)
+            # print(_)
+            if done == True:
+                break
+        env.end()
+        time.sleep(5)
+
