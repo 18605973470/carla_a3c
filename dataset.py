@@ -22,7 +22,11 @@ class MyDataset(torch.utils.data.Dataset):
             label = -label
         with Image.open(self.dir + file) as img:
             img = img.convert('RGB')
+            img = img.crop((0, 120, 480, 320)) # (left, upper, right, lower)
+            img = img.resize((200, 66))
         # img.show()
+        # import time
+        # time.sleep(4)
         img = self.transform(img)
         label = self.target_transform(label)
         # print(label)

@@ -28,6 +28,7 @@ def train_img_transformer(data):
 
 
 img_trans = transforms.Compose([
+    # transforms.Resize(60, 200),
     transforms.ToTensor()
     # transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
 ])
@@ -38,6 +39,7 @@ label_trans = transforms.Compose([
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
+
         # print(data.shape, target.shape)
         target = target.reshape((target.shape[0], 1))
         target = target.float()
@@ -65,15 +67,16 @@ def val(model, device, val_loader):
 
 device = torch.device('cuda:0')
 model = SModel()
+model.load_state_dict(torch.load("nvidiasmodel/nvidia-200.dat"))
 model.to(device)
 model.train()
 
 traindata = MyDataset(traindir, transform=img_trans, target_transform=label_trans)
 valdata = MyDataset(valdir, transform=img_trans, target_transform=transforms.ToTensor)
-train_loader = DataLoader(traindata, 4, True)
-val_loader = DataLoader(valdata, 4, True)
+train_loader = DataLoader(traindata, 64, True)
+val_loader = DataLoader(valdata, 64, True)
 
-epochs = 1000
+epochs = 300
 optimizer = optim.Adam(model.parameters(), lr=0.00001)
 for epoch in range(epochs):
     train(model, device, train_loader, optimizer, epoch)
@@ -84,4 +87,4 @@ for epoch in range(epochs):
         #     print("epoch {} val loss {}".format(i, loss_func(ps, labels)))
         state = model.state_dict()
         for key in state: state[key] = state[key].clone().cpu()
-        torch.save(state, 'vggsmodel/{0}-{1}.dat'.format("vgg16", epoch))
+        torch.save(state, 'nvidiasmodel/{0}-{1}.dat'.format("nvidia", epoch))

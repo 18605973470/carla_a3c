@@ -33,19 +33,45 @@ def weights_init(m):
 class SModel(torch.nn.Module):
     def __init__(self):
         super(SModel, self).__init__()
-        self.cnn = models.vgg16_bn(pretrained=True).features
-        self.fc1 = nn.Linear(76800, 1024)
-        self.lru1 = nn.LeakyReLU(0.1)
+        # self.conv1 = nn.Conv2d(num_inputs, 16, 8, stride=4)
+        self.conv1 = nn.Conv2d(3, 24, 5, stride=2)
+        self.lrelu1 = nn.LeakyReLU(0.1)
+        self.conv2 = nn.Conv2d(24, 36, 5, stride=2)
+        self.lrelu2 = nn.LeakyReLU(0.1)
+        self.conv3 = nn.Conv2d(36, 48, 5, stride=2)
+        self.lrelu3 = nn.LeakyReLU(0.1)
+        self.conv4 = nn.Conv2d(48, 64, 3, stride=1)
+        self.lrelu4 = nn.LeakyReLU(0.1)
+        self.conv5 = nn.Conv2d(64, 64, 3, stride=1)
+        self.lrelu5 = nn.LeakyReLU(0.1)
+
+        # self.cnn = models.vgg16_bn(pretrained=True).features
+        self.fc1 = nn.Linear(1152, 1164)
+        self.lrelu6 = nn.LeakyReLU(0.1)
+        self.fc2 = nn.Linear(1164, 100)
+        self.lrelu7 = nn.LeakyReLU(0.1)
+        self.fc3 = nn.Linear(100, 50)
+        self.lrelu8 = nn.LeakyReLU(0.1)
+        self.fc4 = nn.Linear(50, 10)
+        self.lrelu9 = nn.LeakyReLU(0.1)
         self.dropout1 = nn.Dropout(0.3)
-        self.fc2 = nn.Linear(1024, 1)
+        self.fc5 = nn.Linear(10, 1)
+
         self.apply(weights_init)
 
     def forward(self, inputs):
         x = inputs
-        x = self.cnn(x)
+        x = self.lrelu1(self.conv1(x))
+        x = self.lrelu2(self.conv2(x))
+        x = self.lrelu3(self.conv3(x))
+        x = self.lrelu4(self.conv4(x))
+        x = self.lrelu5(self.conv5(x))
         x = x.view(x.size(0), -1)
-        x = self.fc1(x)
-        x = self.lru1(x)
+
+        x = self.lrelu6(self.fc1(x))
+        x = self.lrelu7(self.fc2(x))
+        x = self.lrelu8(self.fc3(x))
+        x = self.lrelu9(self.fc4(x))
         x = self.dropout1(x)
-        x = self.fc2(x)
+        x = self.fc5(x)
         return x
