@@ -39,7 +39,7 @@ label_trans = transforms.Compose([
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
-
+        l2_reg = torch.autograd.Variable(torch.FloatTensor(1), requires_grad=True).to(device)
         # print(data.shape, target.shape)
         target = target.reshape((target.shape[0], 1))
         target = target.float()
@@ -48,7 +48,12 @@ def train(model, device, train_loader, optimizer, epoch):
         output = model(data)
         # print(output)
         # print(target)
-        loss = nn.MSELoss()(output, target)
+        # loss = nn.MSELoss()(output, target)
+        for w in model.parameters():
+            # print(w)
+            l2_reg = l2_reg + w.norm(2)
+        # print(len(data))
+        loss = (1 / len(data)) * (target - output).pow(2).sum() + l2_reg * 0.001
         loss.backward()
         optimizer.step()
         if batch_idx % 10 == 0:
@@ -67,7 +72,7 @@ def val(model, device, val_loader):
 
 device = torch.device('cuda:0')
 model = SModel()
-model.load_state_dict(torch.load("nvidiasmodel/nvidia-200.dat"))
+# model.load_state_dict(torch.load("nvidiasmodel/nvidia-200.dat"))
 model.to(device)
 model.train()
 
@@ -87,4 +92,4 @@ for epoch in range(epochs):
         #     print("epoch {} val loss {}".format(i, loss_func(ps, labels)))
         state = model.state_dict()
         for key in state: state[key] = state[key].clone().cpu()
-        torch.save(state, 'nvidiasmodel/{0}-{1}.dat'.format("nvidia", epoch))
+        torch.save(state, 'nvidiasmodel/{0}-{1}.dat'.format("nvidial2", epoch))
